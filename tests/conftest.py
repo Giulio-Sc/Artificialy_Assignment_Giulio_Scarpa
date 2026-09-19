@@ -1,3 +1,10 @@
+"""
+The app holds one module-level AppState (current map + history), 
+so a map loaded in one test would still be there in the next. 
+conftest.py prevents that
+"""
+
+
 from collections.abc import Iterator
 
 import pytest
