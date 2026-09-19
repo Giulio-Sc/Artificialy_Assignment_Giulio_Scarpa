@@ -1,6 +1,7 @@
 """
 The Dockerfile installs only requirements.txt, so the shipped image contains no test tooling. 
 That keeps the image smaller and its dependency surface honest.
+This file is needed only to install the packages necessary for the test suit, not to run the service.
 """
 
 -r requirements.txt
