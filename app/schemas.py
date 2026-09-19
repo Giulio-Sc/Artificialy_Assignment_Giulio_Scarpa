@@ -9,16 +9,22 @@ from app.domain.session import Action
 
 
 class HealthResponse(BaseModel):
+    """The fixed body of the health check."""
+
     status: Literal["ok"] = "ok"
 
 
 class MapSummary(BaseModel):
+    """The shape of the map that has just been loaded."""
+
     rows: int
     cols: int
     walkable_tiles: int
 
 
 class CleanRequest(BaseModel):
+    """A cleaning session: where the robot starts, which model it is, and how it moves."""
+
     start: Coordinate
     robot_model: RobotModel
     actions: list[Action]
