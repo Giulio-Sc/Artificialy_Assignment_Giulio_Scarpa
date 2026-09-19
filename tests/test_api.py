@@ -46,6 +46,14 @@ def test_invalid_map_contents_are_rejected(client: TestClient):
     assert upload(client, b"{}", "map.json").status_code == 422
 
 
+def test_the_extension_is_checked_before_the_contents(client: TestClient):
+    assert upload(client, b"oo\nooo\n", "map.csv").status_code == 415
+
+
+def test_an_upload_without_a_file_is_rejected(client: TestClient):
+    assert client.put("/map").status_code == 422
+
+
 def test_a_rejected_upload_keeps_the_current_map(client: TestClient):
     upload(client, TXT_MAP)
 
@@ -202,5 +210,6 @@ def test_loading_a_map_keeps_the_history_and_resets_cleanliness(client: TestClie
     assert len(client.get("/history").text.splitlines()) == 4
 
 
-def test_openapi_schema_is_available(client: TestClient):
+def test_documentation_and_schema_are_available(client: TestClient):
+    assert client.get("/docs").status_code == 200
     assert client.get("/openapi.json").status_code == 200
