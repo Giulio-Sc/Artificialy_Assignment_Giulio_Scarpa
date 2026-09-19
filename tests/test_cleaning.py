@@ -65,6 +65,18 @@ def test_premium_robot_only_cleans_dirty_tiles():
     assert second.successful_steps == 1
 
 
+def test_premium_robot_finds_nothing_to_clean_after_a_basic_robot():
+    cleaning_map = parse_txt_map(b"oo")
+    actions = [Action(direction="east", steps=1)]
+
+    clean(cleaning_map, RobotModel.BASIC, actions=actions)
+    report = clean(cleaning_map, RobotModel.PREMIUM, actions=actions)
+
+    assert report.state is SessionState.COMPLETED, "an empty session is not an error"
+    assert report.cleaned_tiles == []
+    assert report.successful_steps == 1
+
+
 def test_starting_tile_is_processed_without_any_action():
     report = clean(parse_txt_map(b"oo"))
 
