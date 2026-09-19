@@ -39,7 +39,7 @@ async def load_map(file: UploadFile, state: State) -> MapSummary:
     try:
         cleaning_map = parser(await file.read())
     except InvalidMapError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
 
     state.current_map = cleaning_map
     return MapSummary(
@@ -56,7 +56,7 @@ def clean(request: CleanRequest, state: State, response: Response) -> SessionRep
     try:
         report = run_session(cleaning_map, request.robot_model, request.start, request.actions)
     except InvalidStartError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
 
     state.history.append(report)
     if report.state is SessionState.ERROR:
