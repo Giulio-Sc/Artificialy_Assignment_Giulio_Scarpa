@@ -1,3 +1,8 @@
+"""
+The Dockerfile installs only requirements.txt, so the shipped image contains no test tooling. 
+That keeps the image smaller and its dependency surface honest.
+"""
+
 -r requirements.txt
 pytest==9.1.1
 httpx2==2.13.0

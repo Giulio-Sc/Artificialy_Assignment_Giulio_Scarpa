@@ -1,3 +1,3 @@
 fastapi==0.141.1
 uvicorn==0.53.0
-python-multipart==0.0.32
+python-multipart==0.0.32 # used by FastAPI to parse the multipart upload on PUT /map
