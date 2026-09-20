@@ -23,5 +23,9 @@ def state() -> AppState:
 @pytest.fixture
 def client(state: AppState) -> Iterator[TestClient]:
     app.dependency_overrides[get_state] = lambda: state
-    yield TestClient(app)
+    # Entered as a context manager so the client runs the application lifespan: the app has
+    # no startup or shutdown handlers today, and this is what keeps that true of the tests
+    # too if one is ever added.
+    with TestClient(app) as client:
+        yield client
     app.dependency_overrides.clear()
