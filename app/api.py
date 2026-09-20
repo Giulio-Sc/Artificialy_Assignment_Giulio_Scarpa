@@ -20,12 +20,16 @@ State = Annotated[AppState, Depends(get_state)]
 PARSER_BY_EXTENSION = {".txt": parse_txt_map, ".json": parse_json_map}
 
 
-@router.get("/health")
+@router.get("/health", summary="Health check")
 def health() -> HealthResponse:
     return HealthResponse()
 
 
-@router.put("/map")
+@router.put(
+    "/map",
+    summary="Load or replace the current map",
+    responses={415: {"description": "The filename extension is neither .txt nor .json."}},
+)
 async def load_map(file: UploadFile, state: State) -> MapSummary:
     """Load or replace the current map, keeping the cleaning-session history."""
     extension = Path(file.filename or "").suffix.lower()
@@ -49,7 +53,18 @@ async def load_map(file: UploadFile, state: State) -> MapSummary:
     )
 
 
-@router.post("/clean")
+@router.post(
+    "/clean",
+    summary="Run a cleaning session",
+    responses={
+        409: {
+            "model": SessionReport,
+            "description": "The robot collided with a wall or the map boundary, and the session is "
+            "reported with state 'error'. The same code, with a plain error message, means that no "
+            "map has been loaded yet.",
+        }
+    },
+)
 def clean(request: CleanRequest, state: State, response: Response) -> SessionReport:
     """Run one cleaning session on the current map and add it to the history."""
     cleaning_map = _require_map(state)
@@ -64,7 +79,12 @@ def clean(request: CleanRequest, state: State, response: Response) -> SessionRep
     return report
 
 
-@router.get("/history", response_class=Response, responses={200: {"content": {"text/csv": {}}}})
+@router.get(
+    "/history",
+    summary="Download the session history as CSV",
+    response_class=Response,
+    responses={200: {"content": {"text/csv": {}}, "description": "Sessions in creation order."}},
+)
 def download_history(state: State) -> Response:
     """Download the cleaning-session history as CSV."""
     return Response(content=render_history_csv(state.history), media_type="text/csv")

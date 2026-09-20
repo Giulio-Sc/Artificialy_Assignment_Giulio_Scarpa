@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from pydantic import BaseModel, Field, StrictBool, StrictInt, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, ValidationError
 
 from app.domain.models import CleaningMap, Tile
 
@@ -50,7 +50,14 @@ def parse_json_map(content: bytes) -> CleaningMap:
     )
 
 
+# The map format is fully specified, so an unknown key is an authoring mistake rather than a
+# newer version of the format: rejecting it turns a silently misread map into a clear error.
+_STRICT = ConfigDict(extra="forbid")
+
+
 class _JsonTile(BaseModel):
+    model_config = _STRICT
+
     x: StrictInt
     y: StrictInt
     walkable: StrictBool
@@ -58,6 +65,8 @@ class _JsonTile(BaseModel):
 
 
 class _JsonMap(BaseModel):
+    model_config = _STRICT
+
     rows: Annotated[StrictInt, Field(gt=0)]
     cols: Annotated[StrictInt, Field(gt=0)]
     tiles: list[_JsonTile]

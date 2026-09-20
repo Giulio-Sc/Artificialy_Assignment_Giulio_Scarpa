@@ -35,7 +35,9 @@ def run_session(
     _visit(cleaning_map, robot_model, position, cleaned_tiles)
     for direction in _single_steps(actions):
         target = _neighbour(position, direction)
-        if not cleaning_map.is_walkable(target): # A wall and a coordinate outside the map are both non-walkable, and the contract treats them as the same collision.
+        # A wall and a coordinate outside the map are both non-walkable, and the contract
+        # treats them as the same collision.
+        if not cleaning_map.is_walkable(target):
             error = SessionError(message=_collision_message(cleaning_map, target), position=target)
             break
         position = target
@@ -82,6 +84,7 @@ def _visit(
     cleaned_tiles: list[Coordinate],
 ) -> None:
     """Let the robot process the tile it stands on, recording any cleaning operation."""
-    if robot_model.cleans(dirty=cleaning_map.is_dirty(position)):   # Performing the operation and reporting it happen together, so the two cannot diverge.
+    # Performing the operation and reporting it happen together, so the two cannot diverge.
+    if robot_model.cleans(dirty=cleaning_map.is_dirty(position)):
         cleaning_map.mark_clean(position)
         cleaned_tiles.append(position)
