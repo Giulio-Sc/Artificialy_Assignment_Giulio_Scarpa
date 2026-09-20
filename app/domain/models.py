@@ -43,7 +43,7 @@ class RobotModel(StrEnum):
 
     def cleans(self, *, dirty: bool) -> bool:
         """A basic robot cleans every tile it visits, a premium one only dirty tiles."""
-        return self is RobotModel.BASIC or dirty
+        return self is RobotModel.BASIC or dirty    # The behavioural difference between the two models
 
 
 @dataclass
@@ -83,6 +83,10 @@ class CleaningMap:
         return tile is not None and tile.dirty
 
     def mark_clean(self, position: Coordinate) -> None:
+
+        # Cleaning is one-way: only loading a map makes tiles dirty again, so this state
+        # survives every later cleaning session on the same map.
+        
         self._tiles[position.y][position.x].dirty = False
 
     def _tile_at(self, position: Coordinate) -> Tile | None:
