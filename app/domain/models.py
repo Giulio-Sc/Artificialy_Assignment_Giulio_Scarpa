@@ -61,6 +61,10 @@ class CleaningMap:
     """A rectangular grid of tiles that owns tile cleanliness for the map's lifetime."""
 
     def __init__(self, tiles: list[list[Tile]]) -> None:
+        # The parsers already reject a grid that is empty or ragged, but the invariant
+        # belongs to the type that every other method relies on it: `cols` reads row zero.
+        if not tiles or not tiles[0] or any(len(row) != len(tiles[0]) for row in tiles):
+            raise ValueError("A map must be a rectangle of at least one row and one column.")
         self._tiles = tiles
 
     @property
@@ -90,7 +94,12 @@ class CleaningMap:
     def mark_clean(self, position: Coordinate) -> None:
         # Cleaning is one-way: only loading a map makes tiles dirty again, so this state
         # survives every later cleaning session on the same map.
-        self._tiles[position.y][position.x].dirty = False
+        # Reached through _tile_at rather than by indexing: a negative coordinate would
+        # otherwise wrap around and silently clean a tile at the far end of the row.
+        tile = self._tile_at(position)
+        if tile is None:
+            raise ValueError(f"Cannot clean {position}, which is outside the map.")
+        tile.dirty = False
 
     def _tile_at(self, position: Coordinate) -> Tile | None:
         return self._tiles[position.y][position.x] if self.contains(position) else None

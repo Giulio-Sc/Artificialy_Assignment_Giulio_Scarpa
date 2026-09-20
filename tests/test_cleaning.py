@@ -1,7 +1,7 @@
 import pytest
 
 from app.domain.cleaning import InvalidStartError, run_session
-from app.domain.models import CleaningMap, Coordinate, RobotModel
+from app.domain.models import CleaningMap, Coordinate, RobotModel, Tile
 from app.domain.parsing import parse_json_map, parse_txt_map
 from app.domain.session import Action, SessionState
 
@@ -122,6 +122,23 @@ def test_start_must_be_a_walkable_tile_of_the_map():
         clean(cleaning_map, start=at(1, 0))
     with pytest.raises(InvalidStartError):
         clean(cleaning_map, start=at(0, 5))
+
+
+@pytest.mark.parametrize(
+    "position",
+    [
+        pytest.param(at(-1, 0), id="negative x would wrap to the end of the row"),
+        pytest.param(at(0, -1), id="negative y would wrap to the last row"),
+        pytest.param(at(9, 0), id="beyond the last column"),
+    ],
+)
+def test_cleaning_a_tile_outside_the_map_is_refused(position: Coordinate):
+    cleaning_map = CleaningMap([[Tile(True, True), Tile(True, True)]])
+
+    with pytest.raises(ValueError):
+        cleaning_map.mark_clean(position)
+
+    assert cleaning_map.is_dirty(at(1, 0)), "no other tile was cleaned by mistake"
 
 
 def test_duration_is_consistent_with_the_timestamps():

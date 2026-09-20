@@ -1,6 +1,6 @@
 import pytest
 
-from app.domain.models import Coordinate
+from app.domain.models import CleaningMap, Coordinate, Tile
 from app.domain.parsing import InvalidMapError, parse_json_map, parse_txt_map
 
 
@@ -134,3 +134,17 @@ def test_non_walkable_json_tile_may_omit_or_disable_dirty():
 def test_invalid_json_maps(content: bytes):
     with pytest.raises(InvalidMapError):
         parse_json_map(content)
+
+
+@pytest.mark.parametrize(
+    "tiles",
+    [
+        pytest.param([], id="no rows"),
+        pytest.param([[]], id="no columns"),
+        pytest.param([[Tile(True, True)], [Tile(True, True), Tile(True, True)]], id="ragged rows"),
+    ],
+)
+def test_a_map_must_be_a_non_empty_rectangle(tiles: list[list[Tile]]):
+    """The parsers reject these first; the map upholds the invariant every method relies on."""
+    with pytest.raises(ValueError):
+        CleaningMap(tiles)
