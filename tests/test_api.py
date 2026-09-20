@@ -54,6 +54,14 @@ def test_an_upload_without_a_file_is_rejected(client: TestClient):
     assert client.put("/map").status_code == 422
 
 
+def test_a_clean_request_tolerates_unknown_fields(client: TestClient):
+    """Unlike the map file, whose format is fixed, request bodies ignore unknown members."""
+    upload(client, TXT_MAP)
+    body = {"start": {"x": 0, "y": 0}, "robot_model": "basic", "actions": [], "speed": 5}
+
+    assert client.post("/clean", json=body).status_code == 200
+
+
 def test_a_rejected_upload_keeps_the_current_map(client: TestClient):
     upload(client, TXT_MAP)
 

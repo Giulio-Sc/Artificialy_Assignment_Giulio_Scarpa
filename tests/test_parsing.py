@@ -121,6 +121,14 @@ def test_non_walkable_json_tile_may_omit_or_disable_dirty():
             json_map('{"x": 0, "y": 0, "walkable": "true"}', cols=1),
             id="walkable is not a boolean",
         ),
+        pytest.param(
+            json_map('{"x": 0, "y": 0, "walkable": true, "dirt": false}', cols=1),
+            id="misspelled tile field",
+        ),
+        pytest.param(
+            b'{"rows": 1, "cols": 1, "tiles": [{"x": 0, "y": 0, "walkable": true}], "note": "hi"}',
+            id="unknown document field",
+        ),
     ],
 )
 def test_invalid_json_maps(content: bytes):
