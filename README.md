@@ -49,16 +49,8 @@ pytest
 
 Loading a new map replaces the map and resets tile cleanliness, but never erases the history.
 Tile cleanliness is kept between sessions, so a `premium` robot only cleans a tile again after a
-new map has been loaded.
-
-Example session:
-
-```
-curl -X PUT -F "file=@map.txt" http://localhost:8000/map
-curl -X POST http://localhost:8000/clean -H "Content-Type: application/json" \
-  -d '{"start": {"x": 0, "y": 0}, "robot_model": "basic", "actions": [{"direction": "east", "steps": 2}]}'
-curl http://localhost:8000/history
-```
+new map has been loaded. No map is loaded at startup, so `POST /clean` answers `409` until a map
+has been uploaded.
 
 ## Map formats
 
@@ -89,6 +81,35 @@ optional, defaults to dirty for a walkable tile, and must not be true for a non-
   ]
 }
 ```
+
+## Cleaning request
+
+`POST /clean` takes a JSON body describing where the robot starts, which model it is, and how it
+moves:
+
+```json
+{
+  "start": {"x": 0, "y": 0},
+  "robot_model": "basic",
+  "actions": [
+    {"direction": "south", "steps": 2},
+    {"direction": "east", "steps": 3}
+  ]
+}
+```
+
+| Field | Rule |
+| ----- | ---- |
+| `start` | Integer coordinates that must land on a walkable tile of the current map. |
+| `robot_model` | Exactly `basic` or `premium`. |
+| `actions` | Required, and may be an empty list. |
+| `direction` | Exactly one of `north`, `east`, `south`, `west`, lowercase. |
+| `steps` | A positive integer. |
+
+A `basic` robot cleans every tile it visits; a `premium` one cleans only tiles that are currently
+dirty, and skips the rest. The starting tile is processed before the first action but does not
+count as a step, which is why `successful_steps` in the report is the number of *movements*.
+Each action is executed one step at a time, so a session stops at the first tile it cannot enter.
 
 ## History CSV
 
@@ -121,6 +142,99 @@ coordinate — which may lie outside the map — in `error.position`:
 ```json
 {"code": "collision", "message": "The robot cannot enter a non-walkable tile.", "position": {"x": 2, "y": 0}}
 ```
+
+## Walkthrough
+
+The commands below put the reference above into practice. Start the service first, and run them
+from the repository root — `@examples/map.txt` is resolved by your shell, relative to the current
+directory, not by the server. `examples/` holds the two maps used here.
+
+> **Shell notes.** The commands are written for a POSIX shell (bash, zsh, Git Bash). In PowerShell,
+> use `curl.exe`: plain `curl` there is an alias for `Invoke-WebRequest` and has no `-F` flag.
+> PowerShell also mangles the quoting of inline JSON, so for the `POST` steps prefer Git Bash or
+> the interactive page at <http://localhost:8000/docs>.
+
+**1. Load the TXT map.** It is 3×4 with walls at (1, 0) and (2, 1):
+
+```
+curl -X PUT -F "file=@examples/map.txt" http://localhost:8000/map
+{"rows":3,"cols":4,"walkable_tiles":10}
+```
+
+**2. Clean it.** Down the open left column, then east along the bottom row:
+
+```
+curl -X POST http://localhost:8000/clean -H "Content-Type: application/json" -d '{"start": {"x": 0, "y": 0}, "robot_model": "basic", "actions": [{"direction": "south", "steps": 2}, {"direction": "east", "steps": 3}]}'
+```
+
+```json
+{
+  "id": "26e5b40a-abde-4c7f-8849-7cb38eef88ec",
+  "started_at": "2026-09-21T10:34:06.808Z",
+  "finished_at": "2026-09-21T10:34:06.808Z",
+  "state": "completed",
+  "robot_model": "basic",
+  "submitted_actions": 2,
+  "successful_steps": 5,
+  "cleaned_tiles": [
+    {"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 0, "y": 2},
+    {"x": 1, "y": 2}, {"x": 2, "y": 2}, {"x": 3, "y": 2}
+  ],
+  "final_position": {"x": 3, "y": 2},
+  "duration_ms": 0,
+  "error": null
+}
+```
+
+Six tiles cleaned but only five steps: the starting tile was processed without being moved to.
+The `id` and timestamps differ on every run.
+
+**3. Walk into a wall.** Moving east from (0, 0) hits the wall at (1, 0):
+
+```
+curl -X POST http://localhost:8000/clean -H "Content-Type: application/json" -d '{"start": {"x": 0, "y": 0}, "robot_model": "basic", "actions": [{"direction": "east", "steps": 1}]}'
+```
+
+`409`, with the same report fields, `state` of `error`, and
+`"error": {"code": "collision", "message": "...", "position": {"x": 1, "y": 0}}`. The starting tile
+it had already cleaned is still listed in `cleaned_tiles`. Starting *on* the wall instead —
+`"start": {"x": 1, "y": 0}` — is a `422`, because a start must be walkable.
+
+**4. Load the JSON map** to see the two robot models differ. Its tile (1, 0) starts *clean*, which
+a TXT map cannot express:
+
+```
+curl -X PUT -F "file=@examples/map.json" http://localhost:8000/map
+{"rows":2,"cols":3,"walkable_tiles":5}
+```
+
+**5. Run a premium session** east from (0, 0):
+
+```
+curl -X POST http://localhost:8000/clean -H "Content-Type: application/json" -d '{"start": {"x": 0, "y": 0}, "robot_model": "premium", "actions": [{"direction": "east", "steps": 1}]}'
+```
+
+`200` with `"cleaned_tiles": [{"x": 0, "y": 0}]` — it cleaned the dirty starting tile and skipped
+the already-clean (1, 0). Run it **again** and `cleaned_tiles` is `[]`: nothing is dirty any more.
+Send the same body with `"robot_model": "basic"` and both tiles are reported, because a basic robot
+cleans regardless.
+
+**6. Download the history**, which still holds every session above:
+
+```
+curl http://localhost:8000/history
+```
+
+```
+id,started_at,state,robot_model,submitted_actions,successful_steps,cleaned_tiles,duration_ms
+26e5b40a-abde-4c7f-8849-7cb38eef88ec,2026-09-21T10:34:06.808Z,completed,basic,2,5,6,0
+8abe6f4e-bdae-4987-9f84-335e034e25ec,2026-09-21T10:34:06.820Z,error,basic,1,0,1,0
+33a27d10-e4a0-44c8-89d7-44c31860acd6,2026-09-21T10:34:06.849Z,completed,premium,1,1,1,0
+53d09d79-a9f9-432c-a0be-c42b0388b250,2026-09-21T10:34:06.859Z,completed,premium,1,1,0,0
+8b8a7fc7-54b7-426a-9e3b-353b414b20ab,2026-09-21T10:34:06.869Z,completed,basic,1,1,2,0
+```
+
+Loading the second map in step 4 reset tile cleanliness but kept the earlier sessions.
 
 ## Project structure
 

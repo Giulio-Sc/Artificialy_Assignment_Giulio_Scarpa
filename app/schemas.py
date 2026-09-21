@@ -25,17 +25,14 @@ class MapSummary(BaseModel):
 class CleanRequest(BaseModel):
     """A cleaning session: where the robot starts, which model it is, and how it moves."""
 
+    # Pre-prepared example shown in the /docs "try it out". It succeeds on examples/map.txt,
+    # the map the README walkthrough loads: a body generated from the types alone would send
+    # steps=0 and be rejected.
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {
-                    "start": {"x": 0, "y": 0},
-                    "robot_model": "basic",
-                    "actions": [
-                        {"direction": "east", "steps": 2},
-                        {"direction": "south", "steps": 1},
-                    ],
-                }
+                {"start": {"x": 0, "y": 0}, "robot_model": "basic",
+                "actions": [{"direction": "south", "steps": 2}]}
             ]
         }
     )
