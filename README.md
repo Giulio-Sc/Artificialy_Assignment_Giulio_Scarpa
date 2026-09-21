@@ -71,9 +71,8 @@ The uploaded filename must end in `.txt` or `.json`, compared case-insensitively
 | `o`       | Walkable, starts dirty.    |
 | `x`       | Not walkable.              |
 
-Rows must be non-empty and all the same length. `\n` and `\r\n` both work, and one line ending
-after the last row is allowed. This is [`examples/map.txt`](examples/map.txt), a 3x4 map with 10
-walkable tiles:
+Rows must be non-empty and all the same length.\
+This is [`examples/map.txt`](examples/map.txt), a 3x4 map with 10 walkable tiles:
 
 ```
 oxoo
@@ -90,8 +89,8 @@ oooo
 | `walkable`      | Required boolean.                                                      |
 | `dirty`         | Optional boolean. Defaults to dirty when walkable, never true for a wall. |
 
-Only JSON can describe a tile that starts clean, which is what makes the two robot models
-distinguishable on a fresh map. See [`examples/map.json`](examples/map.json).
+Only JSON can describe a tile that starts clean.\
+See [`examples/map.json`](examples/map.json).
 
 ## Cleaning request
 
@@ -111,7 +110,8 @@ distinguishable on a fresh map. See [`examples/map.json`](examples/map.json).
 | `premium` | Only tiles that are currently dirty.            |
 
 The starting tile is processed before the first action but is not a step, so `successful_steps`
-counts movements only. Each action runs one step at a time, and a session stops at the first tile
+counts movements only.\
+Each action runs one step at a time, and a session stops at the first tile
 the robot cannot enter.
 
 ## Status codes
@@ -137,8 +137,8 @@ when the history is empty:
 id,started_at,state,robot_model,submitted_actions,successful_steps,cleaned_tiles,duration_ms
 ```
 
-`cleaned_tiles` is how many tiles were cleaned, not the list. Every other column carries the same
-value as the JSON report.
+`cleaned_tiles` is how many tiles were cleaned, not the list.\
+Every other column carries the same value as the JSON report.
 
 ## Quick start
 
