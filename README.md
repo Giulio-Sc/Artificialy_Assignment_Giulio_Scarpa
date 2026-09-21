@@ -3,8 +3,8 @@
 A small REST API that remotely controls a household cleaning robot: load a map, run a cleaning
 session on it, and download the session history as CSV.
 
-Everything is kept in memory for the lifetime of the process. There is no database and no
-persistence across restarts.
+Everything is kept in memory for the lifetime of the process.\
+There is no database and no persistence across restarts.
 
 ## Running the service
 
@@ -203,12 +203,9 @@ tests/
 ```
 
 The domain package holds the behaviour of the robot and the map with no knowledge of HTTP, so it
-can be tested directly, while `api.py` stays thin and only turns domain outcomes into status codes.
+can be tested directly, while `api.py` stays thin and only turns domain outcomes into status codes.\
 State is reached through a FastAPI dependency rather than a global, which is what lets every test
 run against a fresh map and history.
-
-To extend it: a new map format is a parser registered in `PARSER_BY_EXTENSION`, and a change in
-cleaning behaviour is confined to `domain/cleaning.py` and `RobotModel.cleans`.
 
 ## Design notes
 
@@ -221,5 +218,3 @@ cleaning behaviour is confined to `domain/cleaning.py` and `RobotModel.cleans`.
 | Pydantic sits at the boundaries only. | Internal state such as `Tile` is a plain dataclass, already validated by the parser that built it. |
 | One RFC 3339 formatter, shared. | The JSON report and the CSV export can never disagree about a timestamp. |
 | A collision stops the session and returns `409` with the usual report. | Cleaning already performed is preserved, and the session is stored in the history with state `error`. |
-| No application logging. | uvicorn logs every request, `/history` records every session, and nothing happens off the request path. |
-| No auth, concurrency, persistence, map versioning, frontend or deployment config. | All listed out of scope in the brief. |
