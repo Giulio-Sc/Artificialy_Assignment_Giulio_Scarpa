@@ -69,34 +69,14 @@ oooo
 
 A **JSON** map declares positive `rows` and `cols` and lists exactly one tile per coordinate of the
 rectangle — a missing or duplicated coordinate is invalid. `walkable` is required; `dirty` is
-optional, defaults to dirty for a walkable tile, and must not be true for a non-walkable one:
-
-```json
-{
-  "rows": 1,
-  "cols": 2,
-  "tiles": [
-    {"x": 0, "y": 0, "walkable": true, "dirty": false},
-    {"x": 1, "y": 0, "walkable": false}
-  ]
-}
-```
+optional, defaults to dirty for a walkable tile, and must not be true for a non-walkable one.
+See [`examples/map.json`](examples/map.json), which also has a tile that starts clean — something
+the TXT format cannot express.
 
 ## Cleaning request
 
 `POST /clean` takes a JSON body describing where the robot starts, which model it is, and how it
-moves:
-
-```json
-{
-  "start": {"x": 0, "y": 0},
-  "robot_model": "basic",
-  "actions": [
-    {"direction": "south", "steps": 2},
-    {"direction": "east", "steps": 3}
-  ]
-}
-```
+moves; step 2 of the walkthrough below shows one being sent.
 
 | Field | Rule |
 | ----- | ---- |
@@ -278,18 +258,17 @@ A new map format is added by writing a parser and registering its extension in
   such as `"1"` is not silently accepted where an integer is specified. Validation failures return
   `422` with FastAPI's standard error body. Pydantic sits at the boundaries only; internal state
   such as `Tile` is a plain dataclass, already validated by the parser that built it.
-- **Unknown fields.** A JSON map may only contain the documented keys: its format is fixed, so an
-  unexpected key is an authoring mistake, and rejecting it turns a silently misread map (`"dirt"`
-  for `"dirty"` would leave the tile dirty) into a clear `422`. Request bodies are the other way
-  round and ignore unknown members, as JSON APIs conventionally do.
+- **Unknown fields.** A JSON map may only contain the documented keys, because its format is fixed
+  and an unexpected key is an authoring mistake: `"dirt"` for `"dirty"` would silently leave the
+  tile dirty, so it is a `422` instead. Request bodies ignore unknown members, as JSON APIs do.
 - **Timestamps.** `started_at` and `finished_at` are RFC 3339 UTC timestamps with millisecond
   precision; the CSV export reuses the very same formatting, so the two views always agree.
 - **Collisions.** A session that walks into a wall or off the map stops immediately, keeps the
   cleaning operations already performed, is stored in the history with state `error`, and is
   returned with HTTP `409` using the same report shape as a completed session.
-- **Observability.** uvicorn logs every request and its status, and `GET /history` keeps a record
-  of every session for the lifetime of the process. The service adds no logging of its own: it is
-  synchronous and in memory, so every state change is already visible in a response body and in the
+- **Observability.** uvicorn logs every request and its status, and `GET /history` records every
+  session for the lifetime of the process. The service adds no logging of its own: it is
+  synchronous and in memory, so every state change is already visible in a response and in the
   history, and log lines would repeat that rather than add to it.
 - **Out of scope.** Authentication, concurrent cleaning jobs, persistence, map versioning, a
   frontend and deployment infrastructure are deliberately not implemented.

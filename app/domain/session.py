@@ -42,7 +42,7 @@ class SessionReport(BaseModel):
     state: SessionState
     robot_model: RobotModel
     submitted_actions: int
-    "How many action objects the request contained."
+    "How many actions were submitted for the session."
     successful_steps: int
     "Movements that succeeded; processing the starting tile is not a step."
     cleaned_tiles: list[Coordinate]
@@ -51,7 +51,7 @@ class SessionReport(BaseModel):
     "Where the robot stopped, which after a collision is the last valid coordinate."
     duration_ms: int
     error: SessionError | None = None
-    "Null for a completed session, and the collision details for one in state 'error'."
+    "Absent for a completed session, and the collision details for one in state 'error'."
 
     @field_serializer("started_at", "finished_at")
     def _serialize_timestamp(self, moment: datetime) -> str:
